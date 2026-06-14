@@ -4,8 +4,8 @@ package exchangerate
 type Rate struct {
 	Rank     int     `json:"rank"`
 	Currency string  `kit:"id" json:"currency"` // ISO 4217 code, e.g. "EUR"
-	Rate     float64 `json:"rate"`               // units of Currency per 1 unit of base
-	Base     string  `json:"base"`               // the base currency, e.g. "USD"
+	Rate     float64 `json:"rate"`              // units of Currency per 1 unit of base
+	Base     string  `json:"base"`              // the base currency, e.g. "USD"
 }
 
 // Conversion is the result of converting an amount from one currency to another.

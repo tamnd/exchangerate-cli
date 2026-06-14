@@ -44,12 +44,12 @@ No API key required. 166 currencies supported.`,
 func (Domain) Register(app *kit.App) {
 	app.SetClient(newClient)
 
-	// rates: list exchange rates for a base currency
+	// latest: list exchange rates for a base currency, with optional target filter
 	kit.Handle(app, kit.OpMeta{
-		Name:    "rates",
+		Name:    "latest",
 		Group:   "read",
 		List:    true,
-		Summary: "List exchange rates for a base currency",
+		Summary: "List latest exchange rates for a base currency",
 		Args: []kit.Arg{
 			{Name: "base", Help: "base currency code (e.g. USD, EUR, GBP)"},
 		},
@@ -91,6 +91,7 @@ func newClient(_ context.Context, cfg kit.Config) (any, error) {
 
 type latestInput struct {
 	Base   string        `kit:"arg" help:"base currency code (e.g. USD, EUR, GBP)"`
+	To     string        `kit:"flag" help:"comma-separated target currency codes to filter (e.g. EUR,GBP,JPY)"`
 	Limit  int           `kit:"flag,inherit" help:"max results (0 = all)"`
 	Delay  time.Duration `kit:"flag,inherit" help:"minimum spacing between requests"`
 	Client *Client       `kit:"inject"`
@@ -114,7 +115,23 @@ func latestOp(ctx context.Context, in latestInput, emit func(Rate) error) error 
 	if err != nil {
 		return mapErr(err)
 	}
+
+	// build a filter set from --to if provided
+	var filter map[string]bool
+	if in.To != "" {
+		filter = make(map[string]bool)
+		for _, code := range strings.Split(in.To, ",") {
+			code = strings.TrimSpace(code)
+			if code != "" {
+				filter[strings.ToUpper(code)] = true
+			}
+		}
+	}
+
 	for _, item := range items {
+		if filter != nil && !filter[item.Currency] {
+			continue
+		}
 		if err := emit(item); err != nil {
 			return err
 		}
